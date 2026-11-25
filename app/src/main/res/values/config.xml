@@ -291,7 +291,7 @@
     <!-- A name after the greeting: "Mr. Trịnh" shows GOOD MORNING, MR. TRỊNH. Empty: the greeting alone. -->
     <string name="greeting_name" translatable="false"></string>
     <!-- The greeting above the clock ("Good evening"). false hides it. Can also be set with "show_greeting" in a theme. -->
-    <bool name="show_greeting">true</bool>
+    <bool name="show_greeting">false</bool>
     <!-- The date and the line between the clock and the date in the clock's full white instead of dimmed. Can also be
          set with "header_white" in a theme. -->
     <bool name="header_white">false</bool>
@@ -353,11 +353,11 @@
     <!-- true colours the Wi-Fi pill's icon green while the TV is online and leaves it white while it is not (dark on
          the focused pill either way), so the connection shows at a glance, also as an icon-only button. Can also be
          set with "wifi_status_color": true in a theme's config.json. -->
-    <bool name="wifi_status_color">false</bool>
+    <bool name="wifi_status_color">true</bool>
     <!-- With wifi_status_color: the icon orange while the TV is connected but Android has not reached the internet
          through it (a hotel or holiday-park Wi-Fi waiting for its login page) and red while it is offline, instead
          of white for both. Can also be set with "wifi_status_warnings": true in a theme's config.json. -->
-    <bool name="wifi_status_warnings">false</bool>
+    <bool name="wifi_status_warnings">true</bool>
     <!-- The app library as a round button in the top bar, beside Settings (app_library must be on too). -->
     <bool name="library_button">false</bool>
     <!-- The App library pill after the last Home row. false hides it while library_button is on, so the top-bar
@@ -367,6 +367,11 @@
     <!-- With icon_only_buttons: keep the network name on the Wi-Fi pill up to this width in dp, cut with an ellipsis.
          0 leaves the Wi-Fi pill as an icon. -->
     <integer name="wifi_label_width">0</integer>
+    <!-- Fork addition: the Wi-Fi/Ethernet pill is always a round icon (no network name or "Offline" text on it);
+         the name stays in its talkback description. Its colour shows the state when wifi_status_color is on. -->
+    <bool name="wifi_icon_only">true</bool>
+    <!-- Fork addition: the weekday/date text beside the clock. false hides it and the divider line before it. -->
+    <bool name="show_date">false</bool>
 
     <!-- The Wi-Fi/Ethernet pill in the top bar. false hides it (on Android 14 with Location off it can
          only say "Wi-Fi", not the network name). Can also be set with "show_network_pill" in a theme. -->
@@ -570,6 +575,10 @@
     <!-- The now-playing pill and panel in the top bar. It needs notification access for the launcher's listener
          (cmd notification allow_listener com.grape2tv.home/com.gathin.tvhome.GuardRevival); without it nothing is shown. -->
     <bool name="show_now_playing">true</bool>
+    <!-- Month calendar under the clock (MonthCalendarView). Switchable in Launcher settings. -->
+    <bool name="show_calendar">true</bool>
+    <!-- GitHub repository (owner/name) whose latest release "Check for updates" in Launcher settings installs. -->
+    <string name="update_repo" translatable="false">PhungP/GRAPE2TV</string>
 
     <!-- Tiles drawn from the app's icon and name instead of its banner (for banners that crop badly). -->
     <string-array name="icon_tiles" translatable="false">

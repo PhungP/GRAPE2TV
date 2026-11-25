@@ -151,4 +151,27 @@
     <string name="np_access_on">Sẵn sàng</string>
     <string name="np_access_off">Cần quyền truy cập thông báo</string>
     <string name="np_access_hint">Hãy cấp quyền truy cập thông báo cho launcher trong cài đặt TV, hoặc chạy: adb shell cmd notification allow_listener com.grape2tv.home/com.gathin.tvhome.GuardRevival</string>
+    <!-- Cập nhật, hình nền, màn hình chờ, lịch, cài đặt gọn -->
+    <string name="update_state">Cập nhật: %1$s</string>
+    <string name="update_check">Kiểm tra cập nhật (hiện là %1$s)</string>
+    <string name="update_checking">Đang kiểm tra cập nhật…</string>
+    <string name="update_latest">Bạn đang dùng phiên bản mới nhất (%1$s)</string>
+    <string name="update_failed">Không kết nối được GitHub. Hãy kiểm tra mạng.</string>
+    <string name="update_available_title">Có phiên bản %1$s</string>
+    <string name="update_available_body">Bạn đang dùng %1$s.\n\n%2$s</string>
+    <string name="update_download">Tải về và cài đặt</string>
+    <string name="update_later">Để sau</string>
+    <string name="update_downloading">Đang tải… %1$d%%</string>
+    <string name="update_unknown_sources">Ở màn hình tiếp theo hãy cho phép GRAPE2TV cài ứng dụng, rồi bấm Cập nhật lại.</string>
+    <string name="update_install_failed">Cài đặt thất bại</string>
+    <string name="update_no_repo">Chưa đặt kho cập nhật (update_repo trong config.xml).</string>
+    <string name="wallpaper_source_label">Hình nền online</string>
+    <string name="wallpaper_source_state">Hình nền online: %1$s</string>
+    <string name="wallpaper_source_off">Tắt</string>
+    <string name="wallpaper_source_bing">Ảnh trong ngày của Bing</string>
+    <string name="wallpaper_source_wikimedia">Ảnh trong ngày của Wikimedia</string>
+    <string name="wallpaper_source_picsum">Ảnh ngẫu nhiên (Picsum)</string>
+    <string name="screensaver_state">Bảo vệ màn hình: chọn GRAPE2TV</string>
+    <string name="screensaver_hint">Hãy chọn GRAPE2TV trong cài đặt Bảo vệ màn hình của TV, hoặc chạy: adb shell settings put secure screensaver_components com.grape2tv.home/com.gathin.tvhome.GrapeDream</string>
+    <string name="calendar_state">Lịch tháng: %1$s</string>
 </resources>

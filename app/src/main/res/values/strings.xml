@@ -183,4 +183,27 @@
     <string name="np_access_on">Ready</string>
     <string name="np_access_off">Needs notification access</string>
     <string name="np_access_hint">Allow notification access for this launcher in the TV settings, or run: adb shell cmd notification allow_listener com.grape2tv.home/com.gathin.tvhome.GuardRevival</string>
+    <!-- Updates, wallpapers, screensaver, calendar, compact settings -->
+    <string name="update_state">Update: %1$s</string>
+    <string name="update_check">Check for updates (now %1$s)</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_latest">You have the latest version (%1$s)</string>
+    <string name="update_failed">Could not reach GitHub. Check the internet connection.</string>
+    <string name="update_available_title">Version %1$s is available</string>
+    <string name="update_available_body">You have %1$s.\n\n%2$s</string>
+    <string name="update_download">Download and install</string>
+    <string name="update_later">Later</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_unknown_sources">Allow GRAPE2TV to install apps on the next screen, then press Update again.</string>
+    <string name="update_install_failed">Install failed</string>
+    <string name="update_no_repo">No update repository is set (update_repo in config.xml).</string>
+    <string name="wallpaper_source_label">Online wallpaper</string>
+    <string name="wallpaper_source_state">Online wallpaper: %1$s</string>
+    <string name="wallpaper_source_off">Off</string>
+    <string name="wallpaper_source_bing">Bing picture of the day</string>
+    <string name="wallpaper_source_wikimedia">Wikimedia picture of the day</string>
+    <string name="wallpaper_source_picsum">Random photo (Picsum)</string>
+    <string name="screensaver_state">Screensaver: choose GRAPE2TV</string>
+    <string name="screensaver_hint">Pick GRAPE2TV in the TV\'s Screen saver settings, or run: adb shell settings put secure screensaver_components com.grape2tv.home/com.gathin.tvhome.GrapeDream</string>
+    <string name="calendar_state">Month calendar: %1$s</string>
 </resources>

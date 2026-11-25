@@ -57,6 +57,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.SoundEffectConstants;
+import android.util.DisplayMetrics;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -518,6 +519,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
+        setUpOnlineWallpaper();
         glass = findViewById(R.id.glass);
         glass.setStyle(cfg.glassStyle);
         if (festive) glass.setAccent(festival.accentColor());
@@ -555,6 +557,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!cfg.showGreeting && !cfg.dateBelowClock && !cfg.shamsiDate && !cfg.lunarDate
                 && !cfg.topMenu && !getResources().getBoolean(R.bool.rtl_menu_bar)) {
             centerCompactHeader();
+        }
+        // Fork: the weekday/date text (and the line before it) goes unless Shamsi or lunar dates need the column.
+        if (!getResources().getBoolean(R.bool.show_date) && !cfg.shamsiDate && !cfg.lunarDate) {
+            findViewById(R.id.date).setVisibility(View.GONE);
+            findViewById(R.id.clockDivider).setVisibility(View.GONE);
         }
         if (cfg.headerWhite) {
             // The clock's own white for the date and the line before it, instead of their dimmed whites.
@@ -600,8 +607,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (lunar) lunarDate.setVisibility(View.VISIBLE);
         greetingName = cfg.greetingName;
         if (cfg.dateBelowClock) moveDateBelowClock();
-        if (cfg.dateBelowClock && cfg.iconOnlyButtons && !cfg.topMenu
-                && !getResources().getBoolean(R.bool.rtl_menu_bar)) {
+        // Fork: the pills sit on the clock's row at the top edge, not at the foot of the calendar under it.
+        if (!getResources().getBoolean(R.bool.rtl_menu_bar)) {
             alignDateBelowIconsWithClock();
         }
         if (shamsi) {
@@ -833,8 +840,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         });
         launcherSettingsButton = cfg.launcherSettingsButton;
         if (launcherSettingsButton) {
+            // A gear icon alone, as a round pill like the rest of the icon buttons.
             ((TextView) btnSettings).setText(R.string.launcher_settings);
-            ((TextView) btnSettings).setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_home_settings_pill, 0, 0, 0);
+            ((TextView) btnSettings).setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_settings, 0, 0, 0);
+            makeIconOnly((TextView) btnSettings);
         }
         btnSettings.setOnClickListener(v -> {
             if (launcherSettingsButton) startActivityForResult(
@@ -855,10 +864,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
         addTopBarApps(cfg.topBarApps, cfg.launchActions);
         setUpWeatherAndNowPlaying();
+        setUpMonthCalendar();
         applyUiStylePills();
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
-        wifiIconOnly = iconOnlyButtons && cfg.wifiLabelWidth <= 0;
+        wifiIconOnly = (iconOnlyButtons || getResources().getBoolean(R.bool.wifi_icon_only)) && cfg.wifiLabelWidth <= 0;
         if (cfg.wifiStatusColor) {
             wifiPlainTint = btnWifi.getCompoundDrawableTintList();
             wifiOnlineTint = getColorStateList(R.color.pill_icon_online);
@@ -889,6 +899,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (cfg.wifiLabelWidth > 0) btnWifi.setMaxWidth(Math.round(cfg.wifiLabelWidth * density));
             else makeIconOnly(btnWifi);
             makeIconOnly((TextView) btnSettings);
+        } else if (wifiIconOnly) {
+            makeIconOnly(btnWifi);   // fork: only the Wi-Fi pill loses its label
         }
         if (cfg.iconOnlyInputs) makeIconOnly((TextView) btnInputs);
         iconOnlyVpn = vpnPill && cfg.iconOnlyVpn;
@@ -897,6 +909,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             vpnPlainInk = btnVpn.getCompoundDrawableTintList();
             makeIconOnly(btnVpn);
         }
+        if (launcherSettingsButton && !cfg.topMenu) btnSettings.setContentDescription(getString(R.string.launcher_settings));
         btnSettings.setOnLongClickListener(v -> {
             showSettingsMenu();
             return true;
@@ -1131,6 +1144,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Weather and the now-playing session only while Home is in front: nothing runs behind another app.
         if (weatherFeed != null) weatherFeed.start();
         if (nowPlaying != null) nowPlaying.start();
+        if (monthCalendar != null) monthCalendar.refresh();
+        refreshOnlineWallpaper();
         // Back from an app opened from its tile, focus is still on that tile, so the cinematic "Last opened" line kept
         // the time from before this launch ("2 days ago" right after opening it). Refresh it.
         if (cinematic && heroMeta != null && lastFocused >= 0 && lastFocused < adapter.appCount()) updateHeroMeta(lastFocused);
@@ -2762,6 +2777,66 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView btnNowPlaying;
     private NowPlayingPanel nowPlayingPanel;
 
+    private MonthCalendarView monthCalendar;
+    private ImageView onlineWallpaper;
+    private boolean onlineWallpaperShown;
+
+    /** The month under the clock, when it is switched on in Launcher settings. */
+    private void setUpMonthCalendar() {
+        if (!MonthCalendarView.enabled(this)) return;
+        LinearLayout block = findViewById(R.id.leftBlock);
+        monthCalendar = new MonthCalendarView(this);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = Math.round(8 * density);
+        lp.leftMargin = Math.round(4 * density);
+        block.addView(monthCalendar, lp);
+    }
+
+    /** The online wallpaper's picture, between the plain colour and the sky: only when a source is chosen. */
+    private void setUpOnlineWallpaper() {
+        if (OnlineWallpaper.OFF.equals(OnlineWallpaper.chosen(this))) return;
+        onlineWallpaper = new ImageView(this);
+        onlineWallpaper.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        onlineWallpaper.setColorFilter(0x59000000);   // a little darker, so the clock and tiles stay readable
+        onlineWallpaper.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        root.addView(onlineWallpaper, Math.max(0, root.indexOfChild(sky)), new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+
+    /** Shows the kept picture, and fetches a new one when the source has not been asked today. */
+    private void refreshOnlineWallpaper() {
+        if (onlineWallpaper == null) return;
+        DisplayMetrics m = getResources().getDisplayMetrics();
+        if (!onlineWallpaperShown) {
+            OnlineWallpaper.load(this, m.widthPixels, m.heightPixels, handler, b -> {
+                if (b != null && onlineWallpaper != null) {
+                    onlineWallpaper.setImageBitmap(b);
+                    onlineWallpaperShown = true;
+                }
+            });
+        }
+        OnlineWallpaper.refresh(this, handler, () -> {
+            if (onlineWallpaper == null) return;
+            OnlineWallpaper.load(this, m.widthPixels, m.heightPixels, handler, b -> {
+                if (b != null && onlineWallpaper != null) {
+                    onlineWallpaper.setImageBitmap(b);
+                    onlineWallpaperShown = true;
+                }
+            });
+        });
+    }
+
+    /** Settings and the like open over a blurred snapshot of Home, taken here while Home is still what is on screen. */
+    @Override
+    public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
+        if (intent != null && intent.getComponent() != null
+                && LauncherSettingsActivity.class.getName().equals(intent.getComponent().getClassName())) {
+            BlurBackdrop.capture(this);
+        }
+        super.startActivityForResult(intent, requestCode, options);
+    }
+
     /** Adds the weather chip and the now-playing pill to the top bar, when they are switched on. */
     private void setUpWeatherAndNowPlaying() {
         ViewGroup bar = findViewById(R.id.topButtons);
@@ -2779,6 +2854,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Not in the Hebrew bar: its end-pill key guard counts from the other side (see pillKeys).
         if (NowPlaying.enabled(this) && !rtl) {
             btnNowPlaying = (TextView) getLayoutInflater().inflate(R.layout.top_now_playing, bar, false);
+            btnNowPlaying.setSelected(true);   // a selected TextView runs its marquee: a long title scrolls in the pill
             btnNowPlaying.setOnClickListener(v -> {
                 if (nowPlaying == null || !nowPlaying.active()) return;
                 if (nowPlayingPanel == null) nowPlayingPanel = new NowPlayingPanel(this, nowPlaying, handler, uiStyle);
