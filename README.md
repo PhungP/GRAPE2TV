@@ -17,6 +17,15 @@ debloat scripts, themes and device notes of the original project are not include
   a panel with artwork, progress, previous, play or pause, next and "open the app".
 - **Interface styles**, chosen in Launcher settings (the Settings button in the top bar): Default, Liquid Glass
   (translucent tiles, a light-bending rim, rounder corners) and Sony Xperia (flat, black, rounded squares).
+- **Now-playing card** laid out like a glass music player: artwork, title and artist, a sound-wave button that opens
+  the app, a progress bar with a knob (Left and Right skip 10 seconds) and previous / play-pause / next. The pill in
+  the top bar scrolls long titles.
+- **Month calendar** under the clock (switch it off in Launcher settings).
+- **Online wallpaper** from free sources that need no key: Bing picture of the day, Wikimedia picture of the day or a
+  random Lorem Picsum photo. Fetched at most once a day.
+- **Screensaver** with the day's wallpaper and a clock that moves around the screen.
+- **Updates from GitHub**: "Check for updates" in Launcher settings installs the latest release of this repository.
+- Launcher settings is a compact Liquid Glass card over a blurred snapshot of Home; the Settings button is a gear.
 - English and Vietnamese only.
 
 ## Network and privacy
@@ -24,11 +33,23 @@ debloat scripts, themes and device notes of the original project are not include
 The upstream launcher never touches the network. This fork does, in one place (`WeatherFeed.java`), and declares
 the `INTERNET` permission for it:
 
-- Requests go to `api.open-meteo.com` and `geocoding-api.open-meteo.com`, and to `ipwho.is` when no city is set.
-- They run only while Home is on screen, at most every 30 minutes.
+- Weather: `api.open-meteo.com` and `geocoding-api.open-meteo.com`, and `ipwho.is` when no city is set. Only
+  while Home is on screen, at most every 30 minutes.
+- Online wallpaper (only when a source is chosen): `www.bing.com`, `api.wikimedia.org` and `upload.wikimedia.org`, or
+  `picsum.photos`; at most once a day.
+- Updates: `api.github.com` and the release download, only when you press "Check for updates". The update is handed
+  to Android's installer, which asks you to confirm, and it must be signed with the same key as the installed app.
 - To avoid the IP lookup, set `weather_city` (for example `Hai Phong`) in
   `app/src/main/res/values/config.xml`.
 - Switch the weather off in Launcher settings, or set `show_weather` to `false`.
+
+## Screensaver
+
+Choose GRAPE2TV in the TV's Screen saver settings (Launcher settings has a shortcut), or from a computer:
+
+```
+adb shell settings put secure screensaver_components com.grape2tv.home/com.gathin.tvhome.GrapeDream
+```
 
 ## Now playing: allow notification access
 
@@ -46,6 +67,9 @@ If the TV has no such setting, pressing the "Now playing controls" row in Launch
 1. Open this folder (the one with `settings.gradle`) in Android Studio Rabbit 1.
 2. Let Gradle sync. The project uses Android Gradle Plugin 9.4.0, Gradle 9.6.0 and compileSdk 34.
 3. Build > Generate Signed App Bundle / APK, and sign with your own keystore.
+
+Publishing an update: raise `versionCode` and `versionName` in `app/build.gradle`, build a signed APK with the same
+keystore, and attach it to a GitHub release whose tag is the new version (for example `v1.2.0`).
 
 The application id is `com.grape2tv.home` (change it with `launcherApplicationId` in `gradle.properties`). The
 Java package stays `com.gathin.tvhome`, so merging changes from upstream remains easy.

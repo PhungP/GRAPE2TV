@@ -10,6 +10,8 @@
     <!-- Fork addition: the local weather in the header (WeatherFeed) asks Open-Meteo, and ipwho.is when no city is
          set. Used only while Home is on screen. Nothing else in the launcher opens a connection. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- "Check for updates" in Launcher settings: Android requires this to hand an APK to the package installer. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
@@ -108,6 +110,26 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Result of an update started from Launcher settings (Updater). -->
+        <receiver
+            android:name=".UpdateReceiver"
+            android:exported="false" />
+
+        <!-- The screensaver: the day's wallpaper and a clock that moves (GrapeDream). Chosen in the TV's Screen saver settings. -->
+        <service
+            android:name=".GrapeDream"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/dream" />
+        </service>
 
         <activity
             android:name=".LauncherSettingsActivity"

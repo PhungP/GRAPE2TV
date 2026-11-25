@@ -570,6 +570,10 @@
     <!-- The now-playing pill and panel in the top bar. It needs notification access for the launcher's listener
          (cmd notification allow_listener com.grape2tv.home/com.gathin.tvhome.GuardRevival); without it nothing is shown. -->
     <bool name="show_now_playing">true</bool>
+    <!-- Month calendar under the clock (MonthCalendarView). Switchable in Launcher settings. -->
+    <bool name="show_calendar">true</bool>
+    <!-- GitHub repository (owner/name) whose latest release "Check for updates" in Launcher settings installs. -->
+    <string name="update_repo" translatable="false">PhungP/GRAPE2TV</string>
 
     <!-- Tiles drawn from the app's icon and name instead of its banner (for banners that crop badly). -->
     <string-array name="icon_tiles" translatable="false">

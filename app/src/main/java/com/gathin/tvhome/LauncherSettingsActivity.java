@@ -8,6 +8,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.TextView;
@@ -42,6 +44,12 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView styleChoice;
     private TextView weatherChoice;
     private TextView nowPlayingChoice;
+    private TextView onlineWallpaperChoice;
+    private TextView calendarChoice;
+    private TextView screensaverChoice;
+    private TextView updateChoice;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private boolean busyUpdating;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -53,6 +61,10 @@ public final class LauncherSettingsActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_launcher_settings);
+        // A compact Liquid Glass card over the blurred snapshot of Home that MainActivity took as it opened this screen.
+        float density = getResources().getDisplayMetrics().density;
+        findViewById(R.id.settingsRoot).setBackground(BlurBackdrop.drawable(getResources(), BlurBackdrop.take()));
+        findViewById(R.id.settingsCard).setBackground(new LiquidGlassDrawable(26 * density, density));
         choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
         Config config = Config.load(this);
         View reorderChoice = findViewById(R.id.reorderChoice);
@@ -155,6 +167,25 @@ public final class LauncherSettingsActivity extends Activity {
             openOnStartChoice.setVisibility(View.VISIBLE);
             openOnStartChoice.setOnClickListener(v -> showOpenOnStartPicker());
         }
+        onlineWallpaperChoice = findViewById(R.id.onlineWallpaperChoice);
+        onlineWallpaperChoice.setOnClickListener(v -> showOnlineWallpaperPicker());
+        calendarChoice = findViewById(R.id.calendarChoice);
+        calendarChoice.setOnClickListener(v -> {
+            choices.edit().putBoolean(MonthCalendarView.KEY, !MonthCalendarView.enabled(this)).apply();
+            changed();
+            refresh();
+        });
+        screensaverChoice = findViewById(R.id.screensaverChoice);
+        screensaverChoice.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
+            } catch (ActivityNotFoundException | SecurityException e) {
+                // Many TVs hide the screensaver page: say how to pick it from a computer.
+                Toast.makeText(this, R.string.screensaver_hint, Toast.LENGTH_LONG).show();
+            }
+        });
+        updateChoice = findViewById(R.id.updateChoice);
+        updateChoice.setOnClickListener(v -> checkForUpdate());
         styleChoice = findViewById(R.id.styleChoice);
         styleChoice.setOnClickListener(v -> showStylePicker());
         weatherChoice = findViewById(R.id.weatherChoice);
@@ -181,7 +212,8 @@ public final class LauncherSettingsActivity extends Activity {
         followThemeChoice = findViewById(R.id.followThemeChoice);
         followThemeChoice.setOnClickListener(v -> {
             if (!hasOnTvChoices()) return;
-            choices.edit().remove(UiStyle.KEY).remove(Weather.KEY).remove(NowPlaying.KEY).remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
+            choices.edit().remove(UiStyle.KEY).remove(Weather.KEY).remove(NowPlaying.KEY)
+                    .remove(OnlineWallpaper.KEY).remove(MonthCalendarView.KEY).remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
                     .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
                     .remove(Config.DOCK_OPACITY_KEY).remove(Config.CLOCK_FORMAT_KEY).remove(OpenOnStart.KEY).commit();
             Config current = Config.load(this);
@@ -201,6 +233,121 @@ public final class LauncherSettingsActivity extends Activity {
         refresh();
         if (config.launcherSettingsButton) reorderChoice.requestFocus();
         else columnChoices[Math.max(0, Math.min(columns - 4, 3))].requestFocus();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refresh();   // back from the system's notification access page, say
+    }
+
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacksAndMessages(null);
+        super.onDestroy();
+    }
+
+    private String wallpaperLabel(String id) {
+        switch (id) {
+            case OnlineWallpaper.BING: return getString(R.string.wallpaper_source_bing);
+            case OnlineWallpaper.WIKIMEDIA: return getString(R.string.wallpaper_source_wikimedia);
+            case OnlineWallpaper.PICSUM: return getString(R.string.wallpaper_source_picsum);
+            default: return getString(R.string.wallpaper_source_off);
+        }
+    }
+
+    private void showOnlineWallpaperPicker() {
+        String[] labels = new String[OnlineWallpaper.ALL.length];
+        for (int i = 0; i < labels.length; i++) labels[i] = wallpaperLabel(OnlineWallpaper.ALL[i]);
+        int checked = java.util.Arrays.asList(OnlineWallpaper.ALL).indexOf(OnlineWallpaper.chosen(this));
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.wallpaper_source_label)
+                .setSingleChoiceItems(labels, Math.max(0, checked), (dialog, which) -> {
+                    dialog.dismiss();
+                    choices.edit().putString(OnlineWallpaper.KEY, OnlineWallpaper.ALL[which]).apply();
+                    OnlineWallpaper.invalidate(this);   // choosing a source (again) fetches a new picture
+                    changed();
+                    refresh();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    // ---- update from GitHub --------------------------------------------------------------------------
+
+    private void checkForUpdate() {
+        if (busyUpdating) return;
+        if (Updater.repo(this).isEmpty()) {
+            Toast.makeText(this, R.string.update_no_repo, Toast.LENGTH_LONG).show();
+            return;
+        }
+        busyUpdating = true;
+        updateChoice.setText(R.string.update_checking);
+        Updater.check(this, handler, (release, failed) -> {
+            busyUpdating = false;
+            if (isDestroyed()) return;
+            refresh();
+            if (failed) {
+                Toast.makeText(this, R.string.update_failed, Toast.LENGTH_LONG).show();
+            } else if (release == null || !Updater.isNewer(release.version, Updater.currentVersion(this))) {
+                Toast.makeText(this, getString(R.string.update_latest, Updater.currentVersion(this)), Toast.LENGTH_LONG).show();
+            } else {
+                showUpdateDialog(release);
+            }
+        });
+    }
+
+    private void showUpdateDialog(Updater.Release release) {
+        String notes = release.notes == null ? "" : release.notes.trim();
+        if (notes.length() > 600) notes = notes.substring(0, 600) + "…";
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.update_available_title, release.version))
+                .setMessage(getString(R.string.update_available_body, Updater.currentVersion(this), notes))
+                .setPositiveButton(R.string.update_download, (d, w) -> startUpdate(release))
+                .setNegativeButton(R.string.update_later, null)
+                .show();
+    }
+
+    private void startUpdate(Updater.Release release) {
+        if (!Updater.canInstall(this)) {
+            // Android's "install unknown apps" switch for this app: send the owner to it, once.
+            Toast.makeText(this, R.string.update_unknown_sources, Toast.LENGTH_LONG).show();
+            try {
+                startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        android.net.Uri.parse("package:" + getPackageName())));
+            } catch (ActivityNotFoundException | SecurityException e) {
+                Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+        busyUpdating = true;
+        updateChoice.setText(getString(R.string.update_downloading, 0));
+        Updater.download(this, release, handler, new Updater.DownloadCallback() {
+            @Override
+            public void onProgress(int percent) {
+                if (!isDestroyed()) updateChoice.setText(getString(R.string.update_downloading, percent));
+            }
+
+            @Override
+            public void onDownloaded(File apk) {
+                busyUpdating = false;
+                if (isDestroyed()) return;
+                refresh();
+                try {
+                    Updater.install(LauncherSettingsActivity.this, apk);
+                } catch (java.io.IOException | RuntimeException e) {
+                    Toast.makeText(LauncherSettingsActivity.this, R.string.update_install_failed, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailed() {
+                busyUpdating = false;
+                if (isDestroyed()) return;
+                refresh();
+                Toast.makeText(LauncherSettingsActivity.this, R.string.update_failed, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void showStylePicker() {
@@ -372,11 +519,17 @@ public final class LauncherSettingsActivity extends Activity {
                 getString(Weather.enabled(this) ? R.string.on : R.string.off)));
         nowPlayingChoice.setText(getString(R.string.np_access_state, getString(!NowPlaying.hasAccess(this)
                 ? R.string.np_access_off : NowPlaying.enabled(this) ? R.string.on : R.string.off)));
+        onlineWallpaperChoice.setText(getString(R.string.wallpaper_source_state, wallpaperLabel(OnlineWallpaper.chosen(this))));
+        calendarChoice.setText(getString(R.string.calendar_state,
+                getString(MonthCalendarView.enabled(this) ? R.string.on : R.string.off)));
+        screensaverChoice.setText(R.string.screensaver_state);
+        if (!busyUpdating) updateChoice.setText(getString(R.string.update_check, Updater.currentVersion(this)));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 
     private boolean hasOnTvChoices() {
-        return choices.contains(UiStyle.KEY) || choices.contains(Weather.KEY) || choices.contains(NowPlaying.KEY)
+        return choices.contains(OnlineWallpaper.KEY) || choices.contains(MonthCalendarView.KEY)
+                || choices.contains(UiStyle.KEY) || choices.contains(Weather.KEY) || choices.contains(NowPlaying.KEY)
                 || choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
                 || choices.contains("animations") || choices.contains("advanced_effects")
                 || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY)

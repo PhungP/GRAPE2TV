@@ -225,6 +225,15 @@ final class NowPlaying {
         else t.play();
     }
 
+    /** Jumps {@code deltaMs} from where the playback is now, kept inside the track. */
+    void seekBy(long deltaMs) {
+        if (controller == null) return;
+        long target = positionMs() + deltaMs;
+        long d = durationMs();
+        if (d > 0) target = Math.min(target, d);
+        controller.getTransportControls().seekTo(Math.max(0, target));
+    }
+
     void next() {
         if (controller != null) controller.getTransportControls().skipToNext();
     }

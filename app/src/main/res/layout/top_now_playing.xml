@@ -6,7 +6,9 @@
     style="@style/TopButton"
     android:maxWidth="260dp"
     android:singleLine="true"
-    android:ellipsize="end"
+    android:ellipsize="marquee"
+    android:marqueeRepeatLimit="marquee_forever"
+    android:scrollHorizontally="true"
     android:drawableStart="@drawable/ic_music"
     android:nextFocusDown="@+id/grid"
     android:visibility="gone" />
