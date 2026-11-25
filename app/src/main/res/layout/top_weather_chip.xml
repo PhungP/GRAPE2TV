@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Local weather in the top bar (WeatherFeed): a drawn icon, the temperature and condition, then the place and
+     the day's range. Not focusable: it is information, not a button. Added in code by MainActivity. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/weatherChip"
+    android:layout_width="wrap_content"
+    android:layout_height="42dp"
+    android:layout_marginStart="10dp"
+    android:layout_marginEnd="8dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:focusable="false"
+    android:visibility="gone">
+
+    <ImageView
+        android:id="@+id/weatherIcon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:importantForAccessibility="no" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="9dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/weatherLine1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="190dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:gravity="left"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp"
+            android:fontFamily="@string/font_medium"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/weatherLine2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:maxWidth="190dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:gravity="left"
+            android:textColor="#B3FFFFFF"
+            android:textSize="11sp"
+            android:fontFamily="@string/font_regular"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+</LinearLayout>
